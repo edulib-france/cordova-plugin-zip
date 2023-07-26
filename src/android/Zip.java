@@ -85,7 +85,7 @@ public class Zip extends CordovaPlugin {
             }
 
             File outputDir = resourceApi.mapUriToFile(outputUri);
-            outputDirectory = outputDir.getAbsolutePath();
+            outputDirectory = outputDir.getCanonicalPath();
             outputDirectory += outputDirectory.endsWith(File.separator) ? "" : File.separator;
             if (outputDir == null || (!outputDir.exists() && !outputDir.mkdirs())){
                 String errorMessage = "Could not create output directory";
