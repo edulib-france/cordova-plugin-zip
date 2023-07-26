@@ -6,6 +6,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.FileNotFoundException;
+import java.lang.SecurityException;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
@@ -36,7 +37,11 @@ public class Zip extends CordovaPlugin {
     private void unzip(final CordovaArgs args, final CallbackContext callbackContext) {
         this.cordova.getThreadPool().execute(new Runnable() {
             public void run() {
-                unzipSync(args, callbackContext);
+                try {
+                    unzipSync(args, callbackContext);
+                } catch(SecurityException e) {
+                    callbackContext.error(e.getMessage());
+                }
             }
         });
     }
@@ -50,7 +55,15 @@ public class Zip extends CordovaPlugin {
         return a | b << 8 | c << 16 | d << 24;
     }
 
-    private void unzipSync(CordovaArgs args, CallbackContext callbackContext) {
+    private void ensureZipPathSafety(final File outputFile, final String destDirectory) throws SecurityException {
+        String destDirCanonicalPath = (new File(destDirectory)).getCanonicalPath();
+        String outputFilecanonicalPath = outputFile.getCanonicalPath();
+        if (!outputFileCanonicalPath.startsWith(destDirCanonicalPath)) {
+            throw new SecurityException(String.format("Found Zip Path Traversal Vulnerability with %s", canonicalPath));
+        }
+    }
+    
+    private void unzipSync(CordovaArgs args, CallbackContext callbackContext) throws SecurityException {
         InputStream inputStream = null;
         try {
             String zipFileName = args.getString(0);
@@ -123,17 +136,11 @@ public class Zip extends CordovaPlugin {
 
                 if (ze.isDirectory()) {
                    File dir = new File(outputDirectory + compressedName);
+                   ensureZipPathSafety(dir, outputDirectory);
                    dir.mkdirs();
                 } else {
                     File file = new File(outputDirectory + compressedName);
-                    String canonicalPath = file.getCanonicalPath();
-                    String absolutePath = file.getAbsolutePath();
-                    if (!canonicalPath.startsWith(outputDirectory) && !absolutePath.startsWith(outputDirectory)) {
-                        String errorMessage = "Zip traversal security error";
-                        callbackContext.error(errorMessage);
-                        Log.e(LOG_TAG, errorMessage);
-                        return;
-                    }
+                    ensureZipPathSafety(file, outputDirectory);
                     file.getParentFile().mkdirs();
                     if(file.exists() || file.createNewFile()){
                         Log.w("Zip", "extracting: " + file.getPath());
