@@ -1,25 +1,19 @@
 package org.apache.cordova;
 
+import android.net.Uri;
+import android.util.Log;
+
+import org.apache.cordova.CordovaResourceApi.OpenForReadResult;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.FileNotFoundException;
-import java.lang.SecurityException;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
-
-
-import android.net.Uri;
-import org.apache.cordova.CallbackContext;
-import org.apache.cordova.CordovaPlugin;
-import org.apache.cordova.CordovaResourceApi.OpenForReadResult;
-import org.apache.cordova.PluginResult;
-import org.json.JSONException;
-import org.json.JSONObject;
-
-import android.util.Log;
 
 public class Zip extends CordovaPlugin {
 
@@ -55,11 +49,11 @@ public class Zip extends CordovaPlugin {
         return a | b << 8 | c << 16 | d << 24;
     }
 
-    private void ensureZipPathSafety(final File outputFile, final String destDirectory) throws SecurityException {
+    private void ensureZipPathSafety(final File outputFile, final String destDirectory) throws Exception {
         String destDirCanonicalPath = (new File(destDirectory)).getCanonicalPath();
-        String outputFilecanonicalPath = outputFile.getCanonicalPath();
+        String outputFileCanonicalPath = outputFile.getCanonicalPath();
         if (!outputFileCanonicalPath.startsWith(destDirCanonicalPath)) {
-            throw new SecurityException(String.format("Found Zip Path Traversal Vulnerability with %s", canonicalPath));
+            throw new SecurityException("Found Zip Path Traversal Vulnerability");
         }
     }
     
